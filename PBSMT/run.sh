@@ -122,11 +122,11 @@ fi
 
 if [ ! -f "wiki.en.300.vec" ]; then
   echo "Decompressing English pretrained embeddings..."
-  gunzip -k wiki.en.300.vec.gz
+  gunzip wiki.en.300.vec.gz
 fi
 if [ ! -f "wiki.fr.300.vec" ]; then
   echo "Decompressing French pretrained embeddings..."
-  gunzip -k wiki.fr.300.vec.gz
+  gunzip wiki.fr.300.vec.gz
 fi
 
 if [ "$SRC" == "en" ]; then EMB_SRC=$EMB_PATH/wiki.en.300.vec; fi
@@ -175,7 +175,7 @@ for FILENAME in news*gz; do
   OUTPUT="${FILENAME::-3}"
   if [ ! -f "$OUTPUT" ]; then
     echo "Decompressing $FILENAME..."
-    gunzip -k $FILENAME
+    gunzip $FILENAME
   else
     echo "$OUTPUT already decompressed."
   fi
