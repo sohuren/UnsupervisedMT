@@ -15,7 +15,7 @@ N_MONO=10000000  # number of monolingual sentences for each language
 N_THREADS=48     # number of threads in data preprocessing
 SRC=en           # source language
 TGT=fr           # target language
-Sent=50000      # monolingual data used in back-translation
+Sent=100000      # monolingual data used in back-translation
 
 #
 # Initialize Moses and data paths
@@ -354,7 +354,7 @@ cp ${CONFIG_PATH} $TRAIN_DIR_ITER_FORWARD/model/moses.ini
 echo "Linking phrase-table path..."
 ln -sf $PHRASE_TABLE_PATH $TRAIN_DIR_ITER_FORWARD/model/phrase-table.gz
 
-for epoch in {1..5}; do
+for epoch in {1..2}; do
   
   echo "Iteration", ${epoch}
 
