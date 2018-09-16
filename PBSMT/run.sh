@@ -15,7 +15,7 @@ N_MONO=10000000  # number of monolingual sentences for each language
 N_THREADS=48     # number of threads in data preprocessing
 SRC=en           # source language
 TGT=fr           # target language
-Sent=500000      # monolingual data used in back-translation
+Sent=50000      # monolingual data used in back-translation
 
 #
 # Initialize Moses and data paths
@@ -35,7 +35,7 @@ mkdir -p $PARA_PATH
 mkdir -p $EMB_PATH
 
 # moses
-MOSES_PATH=/private/home/guismay/tools/mosesdecoder  # PATH_WHERE_YOU_INSTALLED_MOSES
+MOSES_PATH=/share/data/speech/Data/haiwang/projects/fair_projects/UnsupervisedMT/NMT/tools/mosesdecoder  # PATH_WHERE_YOU_INSTALLED_MOSES
 TOKENIZER=$MOSES_PATH/scripts/tokenizer/tokenizer.perl
 NORM_PUNC=$MOSES_PATH/scripts/tokenizer/normalize-punctuation.perl
 INPUT_FROM_SGM=$MOSES_PATH/scripts/ems/support/input-from-sgm.perl
@@ -323,63 +323,15 @@ echo "Generating Moses configuration in: $TRAIN_DIR"
 echo "Creating default configuration file..."
 $TRAIN_MODEL -root-dir $TRAIN_DIR \
 -f $SRC -e $TGT -alignment grow-diag-final-and -reordering msd-bidirectional-fe \
--lm 0:5:$TGT_LM_BLM:8 -external-bin-dir $MOSES_PATH/tools \
+-lm 0:5:$TGT_LM_BLM:8 -external-bin-dir $MOSES_PATH/tools/bin \
 -cores $N_THREADS -max-phrase-length=4 -score-options "--NoLex" -first-step=9 -last-step=9
 CONFIG_PATH=$TRAIN_DIR/model/moses.ini
-
 echo "Removing lexical reordering features ..."
 mv $TRAIN_DIR/model/moses.ini $TRAIN_DIR/model/moses.ini.bkp
 cat $TRAIN_DIR/model/moses.ini.bkp | grep -v LexicalReordering > $TRAIN_DIR/model/moses.ini
-
 echo "Linking phrase-table path..."
 ln -sf $PHRASE_TABLE_PATH $TRAIN_DIR/model/phrase-table.gz
 
-# add the back-translation procedure here
-echo "Translating monolingual data..."
-
-for epoch in {1 2 3 4 5}; do
-
-  TRAIN_DIR_ITER_FORWARD=${TRAIN_DIR}-${epoch}-forward
-  mkdir $TRAIN_DIR_ITER_FORWARD/model
-  # copy the initial model
-  if [ ${epoch} == 1 ]; then
-    cp ${CONFIG_PATH} $TRAIN_DIR_ITER_FORWARD/model/moses.ini
-    echo "Linking phrase-table path..."
-    ln -sf $PHRASE_TABLE_PATH $TRAIN_DIR_ITER_FORWARD/model/phrase-table.gz
-  fi
-
-  # translate the monolingual data from random sample 50m sentence (SRC to TGT)
-  shuf -n ${Sent} $SRC_TRUE > $SRC_TRUE.sample.${Sent}.${epoch}
-  $MOSES_BIN -threads $N_THREADS -f $TRAIN_DIR_ITER_FORWARD/model/moses.ini < $SRC_TRUE.sample.${Sent}.${epoch} > $SRC_TRUE.sample.${Sent}.${epoch}.hyp.${TGT}.true
-
-  # train another model with direction (TGT to SRC)
-  TRAIN_DIR_ITER_BACKWARD=${TRAIN_DIR}-${epoch}-backward
-  $TRAIN_MODEL -root-dir $TRAIN_DIR_ITER_BACKWARD \
-  -f $TGT -e $SRC -alignment grow-diag-final-and -reordering msd-bidirectional-fe \
-  -lm 0:5:$SRC_LM_BLM:8 -external-bin-dir $MOSES_PATH/tools \
-  -cores $N_THREADS -max-phrase-length=4 -score-options "--NoLex" -first-step=9 -last-step=9
-  CONFIG_PATH=$TRAIN_DIR_ITER_BACKWARD/model/moses.ini
-  echo "Removing lexical reordering features ..."
-  mv $TRAIN_DIR_ITER_BACKWARD/model/moses.ini $TRAIN_DIR_ITER_BACKWARD/model/moses.ini.bkp
-  cat $TRAIN_DIR_ITER_BACKWARD/model/moses.ini.bkp | grep -v LexicalReordering > $TRAIN_DIR_ITER_BACKWARD/model/moses.ini
-
-  # translate the monolingual data from random sample 50m sentence (TGT to SRC)
-  shuf -n ${Sent} $TGT_TRUE > $TGT_TRUE.sample.${Sent}
-  $MOSES_BIN -threads $N_THREADS -f $TRAIN_DIR_ITER_BACKWARD/model/moses.ini < $TGT_TRUE.sample.${Sent} > $TGT_TRUE.sample.${Sent}.${epoch}.hyp.${SRC}.true
-  
-  # train another model with direction (SRC to TGT)
-  $TRAIN_MODEL -root-dir $TRAIN_DIR \
-  -f $SRC -e $TGT -alignment grow-diag-final-and -reordering msd-bidirectional-fe \
-  -lm 0:5:$TGT_LM_BLM:8 -external-bin-dir $MOSES_PATH/tools \
-  -cores $N_THREADS -max-phrase-length=4 -score-options "--NoLex" -first-step=9 -last-step=9
-  CONFIG_PATH=$TRAIN_DIR/model/moses.ini
-  echo "Removing lexical reordering features ..."
-  mv $TRAIN_DIR/model/moses.ini $TRAIN_DIR/model/moses.ini.bkp
-  cat $TRAIN_DIR/model/moses.ini.bkp | grep -v LexicalReordering > $TRAIN_DIR/model/moses.ini
-
-done
-
-# SRC to TGT
 echo "Translating test sentences..."
 $MOSES_BIN -threads $N_THREADS -f $CONFIG_PATH < $SRC_TEST.true > $TRAIN_DIR/test.$TGT.hyp.true
 echo "Detruecasing hypothesis..."
@@ -389,13 +341,86 @@ $MULTIBLEU $TGT_TEST.true < $TRAIN_DIR/test.$TGT.hyp.true > $TRAIN_DIR/eval.true
 $MULTIBLEU $TGT_TEST.tok < $TRAIN_DIR/test.$TGT.hyp.tok > $TRAIN_DIR/eval.tok.${SRC}2${TGT}
 cat $TRAIN_DIR/eval.tok.${SRC}2${TGT}
 
-# TGT to SRC
-echo "Translating test sentences..."
-$MOSES_BIN -threads $N_THREADS -f $CONFIG_PATH < $TGT_TEST.true > $TRAIN_DIR/test.$SRC.hyp.true
-echo "Detruecasing hypothesis..."
-$DETRUECASER < $TRAIN_DIR/test.$SRC.hyp.true > $TRAIN_DIR/test.$SRC.hyp.tok
-echo "Evaluating translations..."
-$MULTIBLEU $SRC_TEST.true < $TRAIN_DIR/test.$SRC.hyp.true > $TRAIN_DIR/eval.true.${TGT}2${SRC}
-$MULTIBLEU $SRC_TEST.tok < $TRAIN_DIR/test.$SRC.hyp.tok > $TRAIN_DIR/eval.tok.${TGT}2${SRC}
-cat $TRAIN_DIR/eval.tok.${TGT}2${SRC}
+
+echo "Back Translate procedure..."
+
+# add the back-translation procedure here @9.10.2018, first iteration
+epoch=1
+TRAIN_DIR_ITER_FORWARD=${TRAIN_DIR}-${epoch}-forward
+mkdir -p $TRAIN_DIR_ITER_FORWARD
+mkdir -p $TRAIN_DIR_ITER_FORWARD/model
+# copy the initial model in first epoch
+cp ${CONFIG_PATH} $TRAIN_DIR_ITER_FORWARD/model/moses.ini
+echo "Linking phrase-table path..."
+ln -sf $PHRASE_TABLE_PATH $TRAIN_DIR_ITER_FORWARD/model/phrase-table.gz
+
+for epoch in {1..5}; do
+  
+  echo "Iteration", ${epoch}
+
+  echo "Translating monolingual data..."
+  # translate the monolingual data from random sample 50m sentence (SRC to TGT)
+  shuf -n ${Sent} $SRC_TRUE > $SRC_TRUE.sample.${Sent}.${epoch}.${SRC}
+  $MOSES_BIN -threads $N_THREADS -f $TRAIN_DIR_ITER_FORWARD/model/moses.ini < $SRC_TRUE.sample.${Sent}.${epoch}.${SRC} > $SRC_TRUE.sample.${Sent}.${epoch}.${TGT}
+  # train another model with direction (TGT to SRC)
+  TRAIN_DIR_ITER_BACKWARD=${TRAIN_DIR}-${epoch}-backward
+  mkdir -p $TRAIN_DIR_ITER_BACKWARD
+  mkdir -p $TRAIN_DIR_ITER_BACKWARD/model
+  mkdir -p $TRAIN_DIR_ITER_BACKWARD/corpus
+  cp $SRC_TRUE.sample.${Sent}.${epoch}.${SRC} $TRAIN_DIR_ITER_BACKWARD/corpus/$SRC.sample.${Sent}.${epoch}.${SRC}
+  cp $SRC_TRUE.sample.${Sent}.${epoch}.${TGT} $TRAIN_DIR_ITER_BACKWARD/corpus/$SRC.sample.${Sent}.${epoch}.${TGT}
+  echo "Train Moses Backward"
+  $TRAIN_MODEL -root-dir $TRAIN_DIR_ITER_BACKWARD -corpus ${TRAIN_DIR_ITER_BACKWARD}/corpus/$SRC.sample.${Sent}.${epoch} \
+  -f $TGT -e $SRC -alignment grow-diag-final-and -reordering msd-bidirectional-fe \
+  -lm 0:5:$SRC_LM_BLM:8 -external-bin-dir $MOSES_PATH/tools/bin \
+  -cores $N_THREADS -max-phrase-length=4 -score-options "--NoLex" -first-step=1 -last-step=9
+  
+  echo "Removing lexical reordering features ..."
+  mv $TRAIN_DIR_ITER_BACKWARD/model/moses.ini $TRAIN_DIR_ITER_BACKWARD/model/moses.ini.bkp
+  cat $TRAIN_DIR_ITER_BACKWARD/model/moses.ini.bkp | grep -v LexicalReordering > $TRAIN_DIR_ITER_BACKWARD/model/moses.ini
+
+  # Eval: TGT to SRC
+  echo "Translating test sentences..."
+  $MOSES_BIN -threads $N_THREADS -f $TRAIN_DIR_ITER_BACKWARD/model/moses.ini < $TGT_TEST.true > $TRAIN_DIR_ITER_BACKWARD/test.$SRC.hyp.true
+  echo "Detruecasing hypothesis..."
+  $DETRUECASER < $TRAIN_DIR_ITER_BACKWARD/test.$SRC.hyp.true > $TRAIN_DIR_ITER_BACKWARD/test.$SRC.hyp.tok
+  echo "Evaluating translations..."
+  $MULTIBLEU $SRC_TEST.true < $TRAIN_DIR_ITER_BACKWARD/test.$SRC.hyp.true > $TRAIN_DIR_ITER_BACKWARD/eval.true.${TGT}2${SRC}
+  $MULTIBLEU $SRC_TEST.tok < $TRAIN_DIR_ITER_BACKWARD/test.$SRC.hyp.tok > $TRAIN_DIR_ITER_BACKWARD/eval.tok.${TGT}2${SRC}
+  cat $TRAIN_DIR_ITER_BACKWARD/eval.tok.${TGT}2${SRC}
+
+  # translate the monolingual data from random sample 50m sentence (TGT to SRC)
+  echo "Translating monolingual data..."
+  shuf -n ${Sent} $TGT_TRUE > $TGT_TRUE.sample.${Sent}.${epoch}.${TGT}
+  $MOSES_BIN -threads $N_THREADS -f $TRAIN_DIR_ITER_BACKWARD/model/moses.ini < $TGT_TRUE.sample.${Sent}.${epoch}.${TGT} > $TGT_TRUE.sample.${Sent}.${epoch}.${SRC}
+  # train another model with direction (SRC to TGT)
+  epoch_next=$((epoch + 1))
+  TRAIN_DIR_ITER_FORWARD=${TRAIN_DIR}-${epoch_next}-forward
+  mkdir -p $TRAIN_DIR_ITER_FORWARD
+  mkdir -p $TRAIN_DIR_ITER_FORWARD/model
+  mkdir -p $TRAIN_DIR_ITER_FORWARD/corpus
+  cp $TGT_TRUE.sample.${Sent}.${epoch}.${SRC} $TRAIN_DIR_ITER_FORWARD/corpus/$TGT.sample.${Sent}.${epoch}.${SRC}
+  cp $TGT_TRUE.sample.${Sent}.${epoch}.${TGT} $TRAIN_DIR_ITER_FORWARD/corpus/$TGT.sample.${Sent}.${epoch}.${TGT}
+  echo "Train Moses Forward"
+  $TRAIN_MODEL -root-dir $TRAIN_DIR_ITER_FORWARD -corpus $TRAIN_DIR_ITER_FORWARD/corpus/$TGT.sample.${Sent}.${epoch} \
+  -f $SRC -e $TGT -alignment grow-diag-final-and -reordering msd-bidirectional-fe \
+  -lm 0:5:$TGT_LM_BLM:8 -external-bin-dir $MOSES_PATH/tools/bin \
+  -cores $N_THREADS -max-phrase-length=4 -score-options "--NoLex" -first-step=1 -last-step=9
+  
+  echo "Removing lexical reordering features ..."
+  mv $TRAIN_DIR_ITER_FORWARD/model/moses.ini $TRAIN_DIR_ITER_FORWARD/model/moses.ini.bkp
+  cat $TRAIN_DIR_ITER_FORWARD/model/moses.ini.bkp | grep -v LexicalReordering > $TRAIN_DIR_ITER_FORWARD/model/moses.ini
+
+  # Eval: SRC to TGT
+  echo "Translating test sentences..."
+  $MOSES_BIN -threads $N_THREADS -f $TRAIN_DIR_ITER_FORWARD/model/moses.ini < $SRC_TEST.true > $TRAIN_DIR_ITER_FORWARD/test.$TGT.hyp.true
+  echo "Detruecasing hypothesis..."
+  $DETRUECASER < $TRAIN_DIR_ITER_FORWARD/test.$TGT.hyp.true > $TRAIN_DIR_ITER_FORWARD/test.$TGT.hyp.tok
+  echo "Evaluating translations..."
+  $MULTIBLEU $TGT_TEST.true < $TRAIN_DIR_ITER_FORWARD/test.$TGT.hyp.true > $TRAIN_DIR_ITER_FORWARD/eval.true.${SRC}2${TGT}
+  $MULTIBLEU $TGT_TEST.tok < $TRAIN_DIR_ITER_FORWARD/test.$TGT.hyp.tok > $TRAIN_DIR_ITER_FORWARD/eval.tok.${SRC}2${TGT}
+  cat $TRAIN_DIR_ITER_FORWARD/eval.tok.${SRC}2${TGT}
+
+done
+
 echo "End of training. Experiment is stored in: $TRAIN_DIR"
