@@ -25,7 +25,7 @@ N_EPOCHS=10      # number of fastText epochs
 UMT_PATH=$PWD
 TOOLS_PATH=$PWD/tools
 DATA_PATH=$PWD/data
-MONO_PATH=$DATA_PATH/mono
+MONO_PATH=$DATA_PATH/mono_en_de
 PARA_PATH=$DATA_PATH/para
 
 # create paths
@@ -54,7 +54,7 @@ SRC_RAW=$MONO_PATH/all.en
 TGT_RAW=$MONO_PATH/all.de
 SRC_TOK=$MONO_PATH/all.en.tok
 TGT_TOK=$MONO_PATH/all.de.tok
-BPE_CODES=$MONO_PATH/bpe_codes
+BPE_CODES=$MONO_PATH/bpe_codes.en_de
 CONCAT_BPE=$MONO_PATH/all.en-de.$CODES
 SRC_VOCAB=$MONO_PATH/vocab.en.$CODES
 TGT_VOCAB=$MONO_PATH/vocab.de.$CODES
@@ -126,10 +126,10 @@ wget -c http://www.statmt.org/wmt14/training-monolingual-news-crawl/news.2010.en
 wget -c http://www.statmt.org/wmt14/training-monolingual-news-crawl/news.2011.en.shuffled.gz
 wget -c http://www.statmt.org/wmt14/training-monolingual-news-crawl/news.2012.en.shuffled.gz
 wget -c http://www.statmt.org/wmt14/training-monolingual-news-crawl/news.2013.en.shuffled.gz
-# wget -c http://www.statmt.org/wmt15/training-monolingual-news-crawl-v2/news.2014.en.shuffled.v2.gz
-# wget -c http://data.statmt.org/wmt16/translation-task/news.2015.en.shuffled.gz
-# wget -c http://data.statmt.org/wmt17/translation-task/news.2016.en.shuffled.gz
-# wget -c http://data.statmt.org/wmt18/translation-task/news.2017.en.shuffled.deduped.gz
+wget -c http://www.statmt.org/wmt15/training-monolingual-news-crawl-v2/news.2014.en.shuffled.v2.gz
+#wget -c http://data.statmt.org/wmt16/translation-task/news.2015.en.shuffled.gz
+#wget -c http://data.statmt.org/wmt17/translation-task/news.2016.en.shuffled.gz
+#wget -c http://data.statmt.org/wmt18/translation-task/news.2017.en.shuffled.deduped.gz
 
 echo "Downloading Germany files..."
 wget -c http://www.statmt.org/wmt14/training-monolingual-news-crawl/news.2007.de.shuffled.gz
@@ -139,17 +139,17 @@ wget -c http://www.statmt.org/wmt14/training-monolingual-news-crawl/news.2010.de
 wget -c http://www.statmt.org/wmt14/training-monolingual-news-crawl/news.2011.de.shuffled.gz
 wget -c http://www.statmt.org/wmt14/training-monolingual-news-crawl/news.2012.de.shuffled.gz
 wget -c http://www.statmt.org/wmt14/training-monolingual-news-crawl/news.2013.de.shuffled.gz
-# wget -c http://www.statmt.org/wmt15/training-monolingual-news-crawl-v2/news.2014.fr.shuffled.v2.gz
-# wget -c http://data.statmt.org/wmt17/translation-task/news.2015.fr.shuffled.gz
-# wget -c http://data.statmt.org/wmt17/translation-task/news.2016.fr.shuffled.gz
-# wget -c http://data.statmt.org/wmt17/translation-task/news.2017.fr.shuffled.gz
+wget -c http://www.statmt.org/wmt15/training-monolingual-news-crawl-v2/news.2014.fr.shuffled.v2.gz
+#wget -c http://data.statmt.org/wmt17/translation-task/news.2015.fr.shuffled.gz
+#wget -c http://data.statmt.org/wmt17/translation-task/news.2016.fr.shuffled.gz
+#wget -c http://data.statmt.org/wmt17/translation-task/news.2017.fr.shuffled.gz
 
 # decompress monolingual data
 for FILENAME in news*gz; do
   OUTPUT="${FILENAME::-3}"
   if [ ! -f "$OUTPUT" ]; then
     echo "Decompressing $FILENAME..."
-    gunzip $FILENAME
+    #gunzip $FILENAME
   else
     echo "$OUTPUT already decompressed."
   fi
@@ -226,6 +226,8 @@ wget -c http://data.statmt.org/wmt17/translation-task/dev.tgz
 echo "Extracting parallel data..."
 tar -xzf dev.tgz
 
+echo $TGT_VALID
+
 # check valid and test files are here
 if ! [[ -f "$SRC_VALID.sgm" ]]; then echo "$SRC_VALID.sgm is not found!"; exit; fi
 if ! [[ -f "$TGT_VALID.sgm" ]]; then echo "$TGT_VALID.sgm is not found!"; exit; fi
@@ -233,15 +235,22 @@ if ! [[ -f "$SRC_TEST.sgm" ]]; then echo "$SRC_TEST.sgm is not found!"; exit; fi
 if ! [[ -f "$TGT_TEST.sgm" ]]; then echo "$TGT_TEST.sgm is not found!"; exit; fi
 
 echo "Tokenizing valid and test data..."
+echo $TGT_VALID
+
 $INPUT_FROM_SGM < $SRC_VALID.sgm | $NORM_PUNC -l en | $REM_NON_PRINT_CHAR | $TOKENIZER -l en -no-escape -threads $N_THREADS > $SRC_VALID
 $INPUT_FROM_SGM < $TGT_VALID.sgm | $NORM_PUNC -l de | $REM_NON_PRINT_CHAR | $TOKENIZER -l de -no-escape -threads $N_THREADS > $TGT_VALID
 $INPUT_FROM_SGM < $SRC_TEST.sgm | $NORM_PUNC -l en | $REM_NON_PRINT_CHAR | $TOKENIZER -l en -no-escape -threads $N_THREADS > $SRC_TEST
 $INPUT_FROM_SGM < $TGT_TEST.sgm | $NORM_PUNC -l de | $REM_NON_PRINT_CHAR | $TOKENIZER -l de -no-escape -threads $N_THREADS > $TGT_TEST
 
 echo "Applying BPE to valid and test files..."
+echo $TGT_VALID
+
+echo $SRC_VALID
 $FASTBPE applybpe $SRC_VALID.$CODES $SRC_VALID $BPE_CODES $SRC_VOCAB
+echo $TGT_VALID.$CODES $TGT_VALID $BPE_CODES $TGT_VOCAB
 $FASTBPE applybpe $TGT_VALID.$CODES $TGT_VALID $BPE_CODES $TGT_VOCAB
 $FASTBPE applybpe $SRC_TEST.$CODES $SRC_TEST $BPE_CODES $SRC_VOCAB
+echo $TGT_TEST.$CODES $TGT_TEST $BPE_CODES $TGT_VOCAB
 $FASTBPE applybpe $TGT_TEST.$CODES $TGT_TEST $BPE_CODES $TGT_VOCAB
 
 echo "Binarizing data..."

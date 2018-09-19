@@ -17,4 +17,4 @@ CUDA_VISIBLE_DEVICES=0 python main.py \
         --enc_optimizer adam,lr=0.0001 \
         --epoch_size 500000 \
         --stopping_criterion bleu_en_fr_valid,10 \
-        --lm_before 100000 --lm_share_enc 1 --lm_share_dec 1 --lm_share_emb True  --lambda_lm "0.2" --batch_size 24
+        --lm_before 100000 --lm_share_enc 1 --lm_share_dec 1 --lm_share_emb True  --lambda_lm "0.2" --batch_size 12

@@ -25,7 +25,7 @@ N_EPOCHS=10      # number of fastText epochs
 UMT_PATH=$PWD
 TOOLS_PATH=$PWD/tools
 DATA_PATH=$PWD/data
-MONO_PATH=$DATA_PATH/mono
+MONO_PATH=$DATA_PATH/mono_en_ru
 PARA_PATH=$DATA_PATH/para
 
 # create paths
@@ -54,7 +54,7 @@ SRC_RAW=$MONO_PATH/all.en
 TGT_RAW=$MONO_PATH/all.ru
 SRC_TOK=$MONO_PATH/all.en.tok
 TGT_TOK=$MONO_PATH/all.ru.tok
-BPE_CODES=$MONO_PATH/bpe_codes
+BPE_CODES=$MONO_PATH/bpe_codes.en_ru
 CONCAT_BPE=$MONO_PATH/all.en-ru.$CODES
 SRC_VOCAB=$MONO_PATH/vocab.en.$CODES
 TGT_VOCAB=$MONO_PATH/vocab.ru.$CODES
@@ -119,27 +119,27 @@ echo "fastText compiled in: $FASTTEXT"
 cd $MONO_PATH
 
 echo "Downloading English files..."
-#wget -c http://www.statmt.org/wmt14/training-monolingual-news-crawl/news.2007.en.shuffled.gz
-#wget -c http://www.statmt.org/wmt14/training-monolingual-news-crawl/news.2008.en.shuffled.gz
-#wget -c http://www.statmt.org/wmt14/training-monolingual-news-crawl/news.2009.en.shuffled.gz
-#wget -c http://www.statmt.org/wmt14/training-monolingual-news-crawl/news.2010.en.shuffled.gz
-# wget -c http://www.statmt.org/wmt14/training-monolingual-news-crawl/news.2011.en.shuffled.gz
-# wget -c http://www.statmt.org/wmt14/training-monolingual-news-crawl/news.2012.en.shuffled.gz
-# wget -c http://www.statmt.org/wmt14/training-monolingual-news-crawl/news.2013.en.shuffled.gz
-# wget -c http://www.statmt.org/wmt15/training-monolingual-news-crawl-v2/news.2014.en.shuffled.v2.gz
+wget -c http://www.statmt.org/wmt14/training-monolingual-news-crawl/news.2007.en.shuffled.gz
+wget -c http://www.statmt.org/wmt14/training-monolingual-news-crawl/news.2008.en.shuffled.gz
+wget -c http://www.statmt.org/wmt14/training-monolingual-news-crawl/news.2009.en.shuffled.gz
+wget -c http://www.statmt.org/wmt14/training-monolingual-news-crawl/news.2010.en.shuffled.gz
+wget -c http://www.statmt.org/wmt14/training-monolingual-news-crawl/news.2011.en.shuffled.gz
+wget -c http://www.statmt.org/wmt14/training-monolingual-news-crawl/news.2012.en.shuffled.gz
+wget -c http://www.statmt.org/wmt14/training-monolingual-news-crawl/news.2013.en.shuffled.gz
+wget -c http://www.statmt.org/wmt15/training-monolingual-news-crawl-v2/news.2014.en.shuffled.v2.gz
 # wget -c http://data.statmt.org/wmt16/translation-task/news.2015.en.shuffled.gz
 # wget -c http://data.statmt.org/wmt17/translation-task/news.2016.en.shuffled.gz
 # wget -c http://data.statmt.org/wmt18/translation-task/news.2017.en.shuffled.deduped.gz
 
 echo "Downloading Russian files..."
-#wget -c http://www.statmt.org/wmt14/training-monolingual-news-crawl/news.2007.ru.shuffled.gz
+wget -c http://www.statmt.org/wmt14/training-monolingual-news-crawl/news.2007.ru.shuffled.gz
 wget -c http://www.statmt.org/wmt14/training-monolingual-news-crawl/news.2008.ru.shuffled.gz
 wget -c http://www.statmt.org/wmt14/training-monolingual-news-crawl/news.2009.ru.shuffled.gz
 wget -c http://www.statmt.org/wmt14/training-monolingual-news-crawl/news.2010.ru.shuffled.gz
 wget -c http://www.statmt.org/wmt14/training-monolingual-news-crawl/news.2011.ru.shuffled.gz
 wget -c http://www.statmt.org/wmt14/training-monolingual-news-crawl/news.2012.ru.shuffled.gz
 wget -c http://www.statmt.org/wmt14/training-monolingual-news-crawl/news.2013.ru.shuffled.gz
-# wget -c http://www.statmt.org/wmt15/training-monolingual-news-crawl-v2/news.2014.fr.shuffled.v2.gz
+wget -c http://www.statmt.org/wmt15/training-monolingual-news-crawl-v2/news.2014.fr.shuffled.v2.gz
 # wget -c http://data.statmt.org/wmt17/translation-task/news.2015.fr.shuffled.gz
 # wget -c http://data.statmt.org/wmt17/translation-task/news.2016.fr.shuffled.gz
 # wget -c http://data.statmt.org/wmt17/translation-task/news.2017.fr.shuffled.gz
@@ -149,7 +149,7 @@ for FILENAME in news*gz; do
   OUTPUT="${FILENAME::-3}"
   if [ ! -f "$OUTPUT" ]; then
     echo "Decompressing $FILENAME..."
-    gunzip $FILENAME
+    #gunzip $FILENAME
   else
     echo "$OUTPUT already decompressed."
   fi
