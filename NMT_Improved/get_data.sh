@@ -25,7 +25,7 @@ N_EPOCHS=10      # number of fastText epochs
 UMT_PATH=$PWD
 TOOLS_PATH=$PWD/tools
 DATA_PATH=$PWD/data
-MONO_PATH=$DATA_PATH/mono_en_fr
+MONO_PATH=$DATA_PATH/mono_en_fr_full
 PARA_PATH=$DATA_PATH/para_en_fr
 
 # create paths
@@ -127,9 +127,9 @@ wget -c http://www.statmt.org/wmt14/training-monolingual-news-crawl/news.2011.en
 wget -c http://www.statmt.org/wmt14/training-monolingual-news-crawl/news.2012.en.shuffled.gz
 wget -c http://www.statmt.org/wmt14/training-monolingual-news-crawl/news.2013.en.shuffled.gz
 wget -c http://www.statmt.org/wmt15/training-monolingual-news-crawl-v2/news.2014.en.shuffled.v2.gz
-# wget -c http://data.statmt.org/wmt16/translation-task/news.2015.en.shuffled.gz
-# wget -c http://data.statmt.org/wmt17/translation-task/news.2016.en.shuffled.gz
-# wget -c http://data.statmt.org/wmt18/translation-task/news.2017.en.shuffled.deduped.gz
+wget -c http://data.statmt.org/wmt16/translation-task/news.2015.en.shuffled.gz
+wget -c http://data.statmt.org/wmt17/translation-task/news.2016.en.shuffled.gz
+wget -c http://data.statmt.org/wmt18/translation-task/news.2017.en.shuffled.deduped.gz
 
 echo "Downloading French files..."
 wget -c http://www.statmt.org/wmt14/training-monolingual-news-crawl/news.2007.fr.shuffled.gz
@@ -140,9 +140,9 @@ wget -c http://www.statmt.org/wmt14/training-monolingual-news-crawl/news.2011.fr
 wget -c http://www.statmt.org/wmt14/training-monolingual-news-crawl/news.2012.fr.shuffled.gz
 wget -c http://www.statmt.org/wmt14/training-monolingual-news-crawl/news.2013.fr.shuffled.gz
 wget -c http://www.statmt.org/wmt15/training-monolingual-news-crawl-v2/news.2014.fr.shuffled.v2.gz
-# wget -c http://data.statmt.org/wmt17/translation-task/news.2015.fr.shuffled.gz
-# wget -c http://data.statmt.org/wmt17/translation-task/news.2016.fr.shuffled.gz
-# wget -c http://data.statmt.org/wmt17/translation-task/news.2017.fr.shuffled.gz
+wget -c http://data.statmt.org/wmt17/translation-task/news.2015.fr.shuffled.gz
+wget -c http://data.statmt.org/wmt17/translation-task/news.2016.fr.shuffled.gz
+wget -c http://data.statmt.org/wmt17/translation-task/news.2017.fr.shuffled.gz
 
 # decompress monolingual data
 for FILENAME in news*gz; do
