@@ -11,7 +11,7 @@ set -e
 # Data preprocessing configuration
 #
 
-N_MONO=10000000  # number of monolingual sentences for each language
+N_MONO=500000000  # number of monolingual sentences for each language
 CODES=60000      # number of BPE codes
 N_THREADS=48     # number of threads in data preprocessing
 N_EPOCHS=10      # number of fastText epochs
@@ -23,7 +23,7 @@ N_EPOCHS=10      # number of fastText epochs
 
 # main paths
 UMT_PATH=$PWD
-TOOLS_PATH=$PWD/tools
+TOOLS_PATH=$PWD/../NMT/tools
 DATA_PATH=$PWD/data
 MONO_PATH=$DATA_PATH/mono_en_fr_full
 PARA_PATH=$DATA_PATH/para_en_fr
